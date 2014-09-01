@@ -1,0 +1,26 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+
+entity dff is
+  port  (rst:in std_logic;
+    din:in std_logic;
+    clk:in std_logic;
+    ec:in std_logic;
+     dout:out std_logic);
+  end dff;
+    architecture behavioral of dff is
+      begin
+      process(din,rst,clk)
+          begin
+           if(rst='1') then
+            dout <= '0';
+         elsif (ec='1')then 
+       dout<='X';
+          elsif(clk'event and clk='1') then
+          dout<= din;
+        end if;
+      end process;
+    end behavioral;
+ 

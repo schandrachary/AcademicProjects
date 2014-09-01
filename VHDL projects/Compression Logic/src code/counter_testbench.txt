@@ -1,0 +1,57 @@
+
+signal clk: BIT := '0';
+clk <= not clk after 50 ns;
+
+signal clk: std_logic;
+signal reset: std_logic;
+signal count: std_logic_vector(7 downto 0);
+process_count: process (clk)
+begin
+	if (clk'event and clk = '1') then
+		if (reset = '1') then
+			count <= (others => '0');
+		else
+			count <= count + 1;
+		end if;
+	end if;
+end process;
+
+finish_sim_time :process
+begin
+	wait for 100 ns;
+	assert false
+		report "simulation finished"
+		severity failure;
+end process finish_sim_time;
+LIBRARY ieee  ; 
+USE ieee.std_logic_1164.all  ; 
+USE ieee.std_logic_arith.all  ; 
+USE ieee.STD_LOGIC_UNSIGNED.all  ; 
+ENTITY counter_tb  IS 
+END ; 
+ 
+ARCHITECTURE counter_tb_arch OF counter_tb IS
+  SIGNAL ec   :  STD_LOGIC  ; 
+  SIGNAL yout   :  std_logic_vector (8 downto 0)  ; 
+  SIGNAL rst   :  STD_LOGIC  ; 
+  SIGNAL count1   :  std_logic_vector (3 downto 0)  ; 
+  SIGNAL clk   :  STD_LOGIC  ; 
+  COMPONENT counter  
+    PORT ( 
+      ec  : out STD_LOGIC ; 
+      yout  : in std_logic_vector (8 downto 0) ; 
+      rst  : in STD_LOGIC ; 
+      count1  : out std_logic_vector (3 downto 0) ; 
+      clk  : in STD_LOGIC ); 
+  END COMPONENT ; 
+BEGIN
+  DUT  : counter  
+    PORT MAP ( 
+      ec   => ec  ,
+      yout   => yout  ,
+      rst   => rst  ,
+      count1   => count1  ,
+      clk   => clk   ) ; 
+END ; 
+
+

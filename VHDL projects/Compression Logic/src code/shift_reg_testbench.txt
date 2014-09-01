@@ -1,0 +1,54 @@
+
+signal clk: BIT := '0';
+clk <= not clk after 50 ns;
+
+signal clk: std_logic;
+signal reset: std_logic;
+signal count: std_logic_vector(7 downto 0);
+process_count: process (clk)
+begin
+	if (clk'event and clk = '1') then
+		if (reset = '1') then
+			count <= (others => '0');
+		else
+			count <= count + 1;
+		end if;
+	end if;
+end process;
+
+finish_sim_time :process
+begin
+	wait for 100 ns;
+	assert false
+		report "simulation finished"
+		severity failure;
+end process finish_sim_time;
+LIBRARY ieee  ; 
+USE ieee.std_logic_1164.all  ; 
+USE ieee.std_logic_arith.all  ; 
+USE ieee.STD_LOGIC_UNSIGNED.all  ; 
+ENTITY shifting_tb  IS 
+END ; 
+ 
+ARCHITECTURE shifting_tb_arch OF shifting_tb IS
+  SIGNAL yout   :  std_logic_vector (8 downto 0)  ; 
+  SIGNAL rst   :  STD_LOGIC  ; 
+  SIGNAL clk   :  STD_LOGIC  ; 
+  SIGNAL xin   :  std_logic_vector (7 downto 0)  ; 
+  COMPONENT shifting  
+    PORT ( 
+      yout  : out std_logic_vector (8 downto 0) ; 
+      rst  : in STD_LOGIC ; 
+      clk  : in STD_LOGIC ; 
+      xin  : in std_logic_vector (7 downto 0) ); 
+  END COMPONENT ; 
+BEGIN
+  DUT  : shifting  
+    PORT MAP ( 
+      yout   => yout  ,
+      rst   => rst  ,
+      clk   => clk  ,
+      xin   => xin   ) ; 
+END ; 
+
+
