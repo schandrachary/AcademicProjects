@@ -1,0 +1,38 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+
+entity counter is
+  port ( rst:in std_logic;
+    clk:in std_logic;
+    yout: in std_logic_vector(8 downto 0);
+  count1:out std_logic_vector(3 downto 0);
+  ec:out std_logic);
+  end counter;
+    
+    architecture  behavioral of counter is
+    signal count: std_logic_vector(3 downto 0);
+    begin
+     
+ process(clk,rst)
+        begin
+          if(rst='1') then
+          count <= "0000";
+          count1<="0000";
+         ec<= '0'; 
+       elsif (yout(8 downto 7)= "00" or yout(8 downto 7)= "01")then
+         count<="0000";
+         ec<='0'; 
+        elsif(clk'event and clk='1')then
+        count <= count+"0001";
+          if(count="1001")then
+                  count<= "0000";
+                  
+            ec<='1'; 
+          end if;
+    end if;
+    count1<= count;
+    end process;
+  end behavioral;
+  

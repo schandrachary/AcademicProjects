@@ -1,0 +1,35 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+
+entity shifting is
+  port( rst: in std_logic;
+    clk: in std_logic;
+    xin: in std_logic_vector(7 downto 0);
+    yout: out std_logic_vector(8 downto 0));
+  end shifting;
+  
+  architecture behavioral of shifting is 
+  begin
+  process(rst,clk)
+  begin
+  if(rst='1')then
+  yout<= (others => '0');
+elsif(clk'event and clk='1') then
+if(xin="00000000")then
+yout(8 downto 7)<= "00";
+yout(6 downto 0)<= "XXXXXXX";
+
+elsif(xin="11111111")then
+yout(8 downto 7)<="01";
+yout(6 downto 0)<= "XXXXXXX";
+
+else 
+  yout(8)<='1';
+  yout(7 downto 0)<=xin;
+  
+  end if;
+end if;
+end process;
+end behavioral;

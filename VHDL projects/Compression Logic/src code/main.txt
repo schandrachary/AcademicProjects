@@ -1,0 +1,118 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.std_logic_arith.all;
+use ieee.std_logic_unsigned.all;
+
+entity main is
+  port ( rst: in std_logic;
+    xinput:in std_logic;
+    clk:in std_logic;
+    muxout:out std_logic;
+     yout:inout std_logic_vector(8 downto 0));
+    
+  end main;
+  
+  architecture behavioral of main is
+    
+      component dff
+        port(rst:in std_logic;
+          din:in std_logic;
+          clk:in std_logic;
+          ec: in std_logic;
+          dout:inout std_logic);
+        end component;
+        
+        component shifting
+        port( rst: in std_logic;
+    clk: in std_logic;
+    xin: in std_logic_vector(7 downto 0);
+    yout: out std_logic_vector(8 downto 0));
+   
+  end component;   
+  component mux
+    port(rst:in std_logic;
+    clk:in std_logic;
+    count: in std_logic_vector(3 downto 0);
+    muxin:in std_logic_vector(8 downto 0);
+    muxout:out std_logic );
+  end component;
+  
+  component counter is
+  port ( rst:in std_logic;
+    clk:in std_logic;
+  count1:out std_logic_vector(3 downto 0);
+  yout: in std_logic_vector(8 downto 0);
+  ec:out std_logic);
+  end component;
+  signal ec:std_logic;
+  signal count1:std_logic_vector(3 downto 0);
+  signal z:std_logic_vector(7 downto 0);
+  begin
+    x1: dff port map( rst => rst,
+      din => xinput,
+      clk => clk,
+      ec =>ec,
+      dout => z(0));
+      
+       x2: dff port map( rst => rst,
+      din => z(0),
+      ec =>ec,
+      clk => clk,
+      dout => z(1));
+      
+       x3: dff port map( rst => rst,
+      din => z(1),
+      clk => clk,
+      ec =>ec,
+      dout => z(2));
+      
+       x4: dff port map( rst => rst,
+      din => z(2),
+      clk => clk,
+      ec =>ec,
+      dout => z(3));
+      
+       x5: dff port map( rst => rst,
+      din => z(3),
+      clk => clk,
+      ec =>ec,
+      dout => z(4));
+      
+       x6: dff port map( rst => rst,
+      din => z(4),
+      clk => clk,
+      ec =>ec,
+      dout => z(5));
+      
+       x7: dff port map( rst => rst,
+      din => z(5),
+      clk => clk,
+      ec =>ec,
+      dout => z(6));
+      
+       x8: dff port map( rst => rst,
+      din => z(6),
+      clk => clk,
+      ec =>ec,
+      dout => z(7));
+      
+      output: shifting port map( rst => rst,
+        xin => z,
+        clk=>clk,
+        yout=>yout );
+        
+       muxoperation: mux port map(rst =>rst,
+        clk => clk,
+        muxin => yout,
+        count =>count1,
+        muxout => muxout);
+        
+        counteroperation: counter port map 
+        ( rst =>rst,
+    clk =>clk,
+  count1 => count1,
+  ec=>ec,
+  yout=> yout );
+  
+        
+      end behavioral;

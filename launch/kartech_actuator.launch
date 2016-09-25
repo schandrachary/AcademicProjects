@@ -1,9 +1,0 @@
-<launch>
-
-  <group ns="kartech_actuator">
-    <node pkg="kartech_actuator" type="kartech_actuator" name="kartech_actuator" args="0"/>
-    <param name="can_channel"                      value="0"/>
-    <param name="position_reach_error"             value="2000"/>
-  </group>
-
-</launch>

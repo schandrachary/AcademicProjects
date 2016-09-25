@@ -1,7 +1,0 @@
-<launch>
-
-  <group ns="kartech_actuator">
-    <node pkg="kartech_actuator" type="kartech_actuator" name="kartech_actuator" args="0"/>
-  </group>
-
-</launch>

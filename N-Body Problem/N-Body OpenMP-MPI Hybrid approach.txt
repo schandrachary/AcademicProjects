@@ -1,0 +1,230 @@
+N Body problem using hybrid programming
+-Source code
+#include <X11/Xlib.h> // X11 library headers
+#include <X11/Xutil.h>
+#include <X11/Xos.h>
+#include <mpi.h>
+#include <omp.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <sys/time.h>
+#define N 8
+#define T 100
+#define G 100
+#define X_RESN 1000 /* x resolution */
+#define Y_RESN 1000 /* y resolution */
+int main (int argc, char **argv)
+{
+int q, start, end, n, buf[N], size, rank;
+MPI_Status status;
+MPI_Init(&argc, &argv);
+MPI_Comm_size(MPI_COMM_WORLD,&size);
+MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//MPI_Init_thread(8);
+//omp_set_num_threads(1);
+//setenv OMP_STACKSIZE 10G //set number of threads here
+Window win; /* initialization for a window */
+unsigned int width, height, /* window size */
+win_x,win_y, /* window position */
+border_width, /* border width in pixels */
+display_width, display_height, /* size of screen */
+screen; /* which screen */
+char *window_name = "My graphics program", *display_name = NULL;
+GC gc;
+unsigned long valuemask = 0;
+XGCValues values;
+Display *display;
+//XArc *arcs;
+XSizeHints size_hints;
+Pixmap bitmap;
+XPoint points[800];
+FILE *fp, *fopen();
+char str[100];
+XSetWindowAttributes attr[1];
+if ( (display = XOpenDisplay (display_name)) == NULL ) { /* connect to Xserver */
+fprintf (stderr, "Cannot connect to X server %s\n",XDisplayName (display_name) );
+exit (-1);
+}
+screen = DefaultScreen (display); /* get screen size */
+display_width = DisplayWidth (display, screen);
+display_height = DisplayHeight (display, screen);
+width = X_RESN; /* set window size */
+height = Y_RESN;
+win_x = 0; win_y = 0; /* set window position */
+border_width = 4; /* create opaque window */
+win = XCreateSimpleWindow (display, RootWindow (display, screen),
+win_x, win_y, width, height, border_width,
+BlackPixel (display, screen), WhitePixel (display, screen));
+size_hints.flags = USPosition|USSize;
+size_hints.x = win_x;
+size_hints.y = win_y;
+size_hints.width = width;
+size_hints.height = height;
+size_hints.min_width = 300;
+size_hints.min_height = 300;
+XSetNormalHints (display, win, &size_hints);
+XStoreName(display, win, window_name);
+gc = XCreateGC (display, win, valuemask, &values); /* create graphics context */
+XSetBackground (display, gc, WhitePixel (display, screen));
+XSetForeground (display, gc, BlackPixel (display, screen));
+XSetLineAttributes (display, gc, 1, LineSolid, CapRound, JoinRound);
+attr[0].backing_store = Always;
+attr[0].backing_planes = 1;
+attr[0].backing_pixel = BlackPixel(display, screen);
+XChangeWindowAttributes(display, win, CWBackingStore | CWBackingPlanes | CWBackingPixel, attr);
+XMapWindow (display, win);
+XSync(display, 0);
+///////////////////////////////////////////////////////////////////////////
+//End of graphics function//////////////////////
+int i, j, k, t, x, error =0;
+float a[N][6], vx[N], vy[N], xx[N], xy[N], Fx[N], Fy[N], dt, x_diff, y_diff, r, F, m, vxNew[N],vyNew[N], xxNew[N], xyNew[N], p[N][6], A[N][6], temp1[N],temp2[N];
+char *usage = "Usage: %s file\n";
+FILE *fd;
+FILE *dest;
+char outputFile[] = "out.list";
+dt = 0.5;
+double elapsed_time, start_time, end_time;
+struct timeval tv1, tv2;
+if (argc< 2) {
+fprintf (stderr, usage, argv[0]);
+error = -1;
+}
+if ((fd =fopen (argv[1], "r")) == NULL) {
+fprintf (stderr, "%s: Cannot open file %s for reading.\n",argv[0], argv[1]);
+fprintf (stderr, usage, argv[0]);
+error = -1;
+}
+if ((dest = fopen (outputFile, "w")) == NULL) {
+fprintf (stderr, "%s: Cannot open file %s for reading.\n",
+argv[0], argv[1]);
+fprintf (stderr, usage, argv[0]);
+error = -1;
+}
+//Broadcast the error
+buf[N]=error;
+MPI_Bcast(&buf,1,MPI_INT,0,MPI_COMM_WORLD);
+if(error)
+return -1;
+//Scan the input array if its a master process
+/////////////////// INITIALIZATION////////////////////
+if(rank == 0){
+for (i = 0; i< N; i++){
+for (j = 0; j < 6; j++){
+fscanf (fd, "%f", &a[i][j]);
+A[i][j]=a[i][j];
+}
+}
+//printf("The input file is:\n %f", a[i][j]);
+//MPI_Barrier(MPI_COMM_WORLD);
+fprintf(dest,"The input file is:\n");
+for (i = 0; i< N; i++){
+for (j = 0; j < 6; j++){
+fprintf (dest,"%f \t", a[i][j]);
+}
+fprintf(dest,"\n");
+}
+//MPI_Barrier(MPI_COMM_WORLD);
+//initialize positions and velocities
+for (i = 0; i< N; i++){
+vx[i]=a[i][4];
+vy[i]=a[i][5];
+xx[i]=a[i][2];
+xy[i]=a[i][3];
+}
+/////////////////////////////Broadcast the entire array///////////////
+MPI_Bcast(&a,1,MPI_FLOAT,0,MPI_COMM_WORLD);
+}// end rank 0
+//printf("process %d in stage 4\n",rank);
+n = N/size;
+start = rank*n;
+end = start + n;
+//fprintf(dest,"No of processes: %d \n Start of process no=%d from(starting of loop) =%d to end=%d\n",size,rank,start,end);
+printf("No of processes: %d \n Start of process no=%d from(starting of loop) =%d to end=%d\n",size,rank,start,end);
+//printf("process %d in stage 5\n",rank);
+// CALCULATIONS
+gettimeofday(&tv1, NULL);
+omp_set_num_threads(8);
+for (t = 0; t < T; t++) { // for each time period
+#pragma omp for schedule(static,1)
+for (x = start; x < end; x++) { // for body x, calculate force on body due to other bodies
+for (i = 0; i < N; i++) {
+if (x != i) { // for different bodies
+x_diff = (a[i][2] - a[x][2]);
+y_diff = (a[i][3] - a[x][3]);
+r = sqrt((x_diff*x_diff)+(y_diff*y_diff));
+F = (G*a[x][1]*a[i][1])/(r*r);
+//fprintf(dest,"force of body %d is %f \n",x,F);
+Fx[x] += F*(x_diff/r);
+Fy[x] += F*(y_diff/r);
+}
+}
+}
+MPI_Barrier(MPI_COMM_WORLD);
+for (i = 0; i < N; i++) {
+///////////Put the velocity and position in temp that will be gathered in the next stage/////////
+m=a[i][1];
+vxNew[i]=vx[i]+Fx[i]*(dt/m);
+vyNew[i]=vy[i]+Fy[i]*(dt/m);
+xxNew[i]=xx[i]+vxNew[i]*dt;
+xyNew[i]=xy[i]+vyNew[i]*dt;
+/*
+temp[i][4] = vxNew[i];
+temp[i][5] = vyNew[i];
+temp[i][2] = xxNew[i];
+temp[i][3] = xyNew[i];
+*/
+//fprintf(dest,"new position of body %d is x:%f, y:%f \n",x,temp[i][2],temp[i][3]);
+}
+// gather the array positions from different processes.
+//MPI_Barrier(MPI_COMM_WORLD);
+MPI_Gather(xxNew, 1, MPI_FLOAT, temp1, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
+MPI_Gather(xyNew, 1, MPI_FLOAT, temp2, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
+if (rank==0){
+fprintf(dest,"xxNew values: \n Time period: %d \n", t);
+for (i = 0; i< N; i++){
+fprintf (dest,"%f \n", xxNew[i]);
+}
+fprintf(dest,"temp values: \n Time period: %d \n", t);
+for (i = 0; i< N; i++){
+fprintf (dest,"x=%f\ty=%f \n", temp1[i],temp2[i]);
+}
+}
+////////////////////////update the table///////////////
+if (rank==0){
+for(i=0;i<N;i++)
+{
+a[i][2]= xxNew[i] ;
+a[i][3]= xyNew[i] ;
+a[i][4]= vxNew[i] ;
+a[i][5]= vyNew[i] ;
+}
+}
+XSync(display,0);
+XClearWindow(display, win);
+XSetForeground(display,gc,(long) 0xDC143C); // color of foreground (object to be drawn)
+//usleep(200000);
+for(i=0;i<N;i++)
+XDrawPoint (display, win, gc, a[i][2], a[i][3]); // draw point at location x, y in window
+for(q=0;q<N;q++)
+XFillArc(display, win, gc, a[q][2], a[q][3], 45, 45, 23040, 360*64); // draw arc/circle
+//FillArcs(display,win,gc,arcs,8);
+XFlush (display);
+//sleep(1/2);
+usleep(20000);
+//print the updated table to the file 'Dest'
+fprintf(dest," \n Time period: %d \n", t);
+for (i = 0; i< N; i++){
+for (j = 0; j < 6; j++){
+fprintf (dest,"%f \t", A[i][j]);
+}
+fprintf(dest,"\n");
+}
+}
+//end time period
+gettimeofday(&tv2, NULL);
+elapsed_time = (tv2.tv_sec - tv1.tv_sec) + ((tv2.tv_usec - tv1.tv_usec) / 1000000.0);
+printf ("elapsed_time from process %d=\t%lf (seconds)\n",rank, elapsed_time);
+MPI_Finalize();
+}// end main
+
